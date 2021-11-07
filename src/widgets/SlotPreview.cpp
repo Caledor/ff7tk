@@ -14,23 +14,25 @@
 //    GNU General Public License for more details.                          //
 /****************************************************************************/
 #include <SlotPreview.h>
+#include <SaveIcon.h>
 
 #include <QHBoxLayout>
 #include <QMouseEvent>
-#include <QPushButton>
+#include <QToolButton>
 #include <QVBoxLayout>
 
-#include <../data/SaveIcon.h>
 
-SlotPreview::SlotPreview(int index, qreal Scale, QWidget *parent)
+SlotPreview::SlotPreview(int index, QWidget *parent)
     : QLabel(parent)
-    , scale(Scale)
     , m_index(index)
 {
+    QFontMetrics formFont(QFont(QStringLiteral("Verdana"), 18, 75, false));
+    m_lineHeight = formFont.height();
+
     Final = new QVBoxLayout();
     Final->setContentsMargins(2, 2, 2, 2);
     setLayout(Final);
-    setFixedSize(int(582 * scale), int(135 * scale));
+    setFixedSize(QSize( int((m_lineHeight *5.2) * 4.311), int(m_lineHeight * 5.2)));
     setStyleSheet(_previewStyle);
     setCursor(Qt::PointingHandCursor);
 }
@@ -40,21 +42,28 @@ void SlotPreview::init_display(void)
     lbl_Slot = new QLabel;
     lbl_Slot->setText(QString(tr("Slot: %1")).arg(QString::number(index() + 1)));
 
-    btn_remove = new QPushButton(QIcon::fromTheme(QString("edit-clear"), QPixmap(":/common/edit-clear")), "", this);
+    btn_remove = new QToolButton(this);
+    btn_remove->setIcon(QIcon::fromTheme(QString("edit-clear"), QPixmap(":/common/edit-clear")));
     btn_remove->setToolTip(tr("Clear Slot"));
-    connect(btn_remove, &QPushButton::clicked, this, [this] { emit btn_remove_clicked(m_index); });
+    connect(btn_remove, &QToolButton::clicked, this, [this] { emit btn_remove_clicked(m_index); });
 
-    btn_copy = new QPushButton(QIcon::fromTheme(QString("edit-copy"), QPixmap(":/common/edit-copy")), "", this);
+    btn_copy = new QToolButton(this);
+    btn_copy->setIcon(QIcon::fromTheme(QString("edit-copy"), QPixmap(":/common/edit-copy")));
     btn_copy->setToolTip(tr("Copy Slot"));
-    connect(btn_copy, &QPushButton::clicked, this, [this] { emit btn_copy_clicked(m_index); });
+    connect(btn_copy, &QToolButton::clicked, this, [this] { emit btn_copy_clicked(m_index); });
 
-    btn_paste = new QPushButton(QIcon::fromTheme(QString("edit-paste"), QPixmap(":/common/edit-paste")), "", this);
+    btn_paste = new QToolButton(this);
+    btn_paste->setIcon(QIcon::fromTheme(QString("edit-paste"), QPixmap(":/common/edit-paste")));
     btn_paste->setToolTip(tr("Paste Into Slot"));
-    connect(btn_paste, &QPushButton::clicked, this, [this] { emit btn_paste_clicked(m_index); });
+    connect(btn_paste, &QToolButton::clicked, this, [this] { emit btn_paste_clicked(m_index); });
 
-    const QList<QPushButton*> buttons = findChildren<QPushButton *>();
+    const QList<QToolButton*> buttons = findChildren<QToolButton *>();
+    int btnWH = int (m_lineHeight * 0.8);
+    QSize btnSize = QSize(btnWH, btnWH);
+    QSize iconSize = QSize (btnWH - 4, btnWH - 4);
     for (auto btn : buttons) {
-        btn->setMaximumSize(int(22 * scale), int(22 * scale));
+        btn->setFixedSize(btnSize);
+        btn->setIconSize(iconSize);
         btn->setCursor(Qt::BitmapCursor);
         btn->setHidden(true);
     }
@@ -101,7 +110,7 @@ void SlotPreview::set_psx_game(void)
     icon = new SaveIcon;
     party1 = new QLabel;
     party1->setScaledContents(true);
-    party1->setFixedSize(int(96 * scale), int(96 * scale));
+    party1->setFixedSize( int(m_lineHeight * 3.5) , int(m_lineHeight * 3.5));
     connect (icon, &SaveIcon::nextIcon, party1, &QLabel::setPixmap);
     location = new QLabel;
     location->setStyleSheet(_genericStyle);
@@ -120,8 +129,7 @@ void SlotPreview::set_psx_game(void)
 
 void SlotPreview::set_ff7_save(void)
 {
-    QSize avatarSize(int(84 * scale), int(96 * scale));
-
+    QSize avatarSize (m_lineHeight * 3 , m_lineHeight * 3.75);
     party1 = new QLabel;
     party1->setFixedSize(avatarSize);
     party1->setScaledContents(true);

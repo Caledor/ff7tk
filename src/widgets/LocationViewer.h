@@ -1,5 +1,5 @@
 /****************************************************************************/
-//    copyright 2013 - 2020 Chris Rizzitello <sithlord48@gmail.com>         //
+//    copyright 2013 - 2022 Chris Rizzitello <sithlord48@gmail.com>         //
 //                                                                          //
 //    This file is part of FF7tk                                            //
 //                                                                          //
@@ -46,7 +46,7 @@ class FF7TKWIDGETS_EXPORT LocationViewer : public QWidget
     Q_OBJECT
 public:
     enum filterMode {NAME, ITEM};
-    explicit LocationViewer(qreal Scale = 1, QWidget *parent = nullptr);
+    explicit LocationViewer(QWidget *parent = nullptr);
     void setFilterString(QString filter = "", LocationViewer::filterMode mode = LocationViewer::NAME);
 signals:
     void locationChanged(QString);
@@ -106,7 +106,6 @@ private:
     QString translate(QString text);
     void searchItem(QRegularExpression exp);
     void searchName(QRegularExpression exp);
-    qreal scale;
     QString region;
     QString langDir;
     int currentStartingLocation = -1;
