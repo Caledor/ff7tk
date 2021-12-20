@@ -22,10 +22,6 @@
     #include <ff7tk_export.h>
 #endif
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    class QStringList;
-#endif
-
 struct FieldItem {
     QList<quint16> Offset; /**< list of offsets to change */
     QList<quint8> Bit;  /**< list of bits to change (at offset of same index) */

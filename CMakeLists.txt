@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 cmake_policy(SET CMP0074 NEW)
 
-project(ff7tk VERSION 0.81.00 DESCRIPTION "Work with Final Fantasy 7 game data")
+project(ff7tk VERSION 1.0.0 DESCRIPTION "Work with Final Fantasy 7 game data")
 
 #Prevent In-sourcebuild
 if(CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -19,19 +19,15 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_BUILD_PARALLEL_LEVEL ON)
 
-if(NOT QT_DEFAULT_MAJOR_VERSION)
-    set(QT_DEFAULT_MAJOR_VERSION 5 CACHE STRING "" FORCE)
-endif()
+#Needed For Qt5/ Qt6 Mixed Environments
+set(QT_DEFAULT_MAJOR_VERSION 6)
 
-if (${QT_DEFAULT_MAJOR_VERSION} MATCHES "5")
-    set(REQUIRED_QT_VERSION 5.15.2)
-elseif (${QT_DEFAULT_MAJOR_VERSION} MATCHES "6")
-    set(REQUIRED_QT_VERSION 6.2.0)
-endif()
+set(REQUIRED_QT_VERSION 6.2.0)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "" FORCE)
 endif()
+
 
 include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
@@ -54,8 +50,8 @@ IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 
 #Qt Info to get deploy app
-find_package(Qt${QT_DEFAULT_MAJOR_VERSION} REQUIRED COMPONENTS Core)
-get_target_property(qmake_executable Qt${QT_DEFAULT_MAJOR_VERSION}::qmake IMPORTED_LOCATION)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+get_target_property(qmake_executable Qt6::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${qmake_executable}" DIRECTORY)
 if(WIN32 OR APPLE)
     if(WIN32)

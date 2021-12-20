@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ master ]
 
+env:
+  BUILD_TYPE: Release
+  Qt_Tools: tools_ifw
+  QT_VERSION: 6.2.3
+
 jobs:
   main_build:
     name: ${{ matrix.config.name }}
@@ -18,54 +23,25 @@ jobs:
       matrix:
         config:
         - {
-           name: "Linux-Qt5-amd64"
-           , os: ubuntu-18.04
-           , QT_VERSION: 5.15.2, QT_INST_DIR: /opt
-           , extraCmakeConfig: "-DQT_DEFAULT_MAJOR_VERSION=5"
-           , packageName: ff7tk-continuous-Qt5-Linux
-           , releasePackage: "ff7tk-continuous-Qt5-Linux.tar.xz"
-          }
-        - {
-           name: "Linux-Qt6-amd64"
+           name: "Linux-amd64"
            , os: ubuntu-20.04
-           , QT_VERSION: 6.2.3, QT_INST_DIR: /opt, QT_MODULES: qt5compat
-           , extraCmakeConfig: "-DQT_DEFAULT_MAJOR_VERSION=6"
-           , packageName: ff7tk-continuous-Qt6-Linux
-           , linuxDeployQtPath: "export PATH=$PATH:/opt/Qt/6.2.3/gcc_64/libexec"
-           , releasePackage: "ff7tk-continuous-Qt6-Linux.tar.xz"
+           , QT_INST_DIR: /opt
+           , packageName: ff7tk-continuous-linux
+           , ff7tkInstallPrefix: /usr
           }
         - {
-            name: "MacOS-Qt5-amd64"
+            name: "MacOS-amd64"
             , os: macos-10.15
-            , QT_VERSION: 5.15.2, QT_INST_DIR: /Users/runner
-            , extraCmakeConfig: "-DQT_DEFAULT_MAJOR_VERSION=5"
+            , QT_INST_DIR: /Users/runner
           }
         - {
-            name: "MacOS-Qt6-amd64"
-            , os: macos-10.15
-            , QT_VERSION: 6.2.3, QT_INST_DIR: /Users/runner, QT_MODULES: qt5compat
-            , extraCmakeConfig: "-DQT_DEFAULT_MAJOR_VERSION=6"
-          }
-        - {
-            name: "Windows-Qt5-x64", WIN_ARCH: "x64"
+            name: "Windows-x64"
             , os: windows-2019
-            , QT_VERSION: 5.15.2, QT_INST_DIR: "C:/", QT_ARCH: win64_msvc2019_64
-            , install_depends: "choco install ninja doxygen.install graphviz --ignore-checksums"
-            , extraCmakeConfig: "-DZLIB_ROOT=C:/zlib -G Ninja -DQT_DEFAULT_MAJOR_VERSION=5"
+            , QT_INST_DIR: "C:"
+            , extraCmakeConfig: "-DZLIB_ROOT=C:/zlib -G Ninja"
+            , packageName: ff7tk-continuous-win64
+            , ff7tkInstallPrefix: ff7tk-continuous-win64
           }
-        - {
-            name: "Windows-Qt6-x64", WIN_ARCH: "x64"
-            , os: windows-2019
-            , QT_VERSION: 6.2.3, QT_INST_DIR: "C:/", QT_ARCH: win64_msvc2019_64, QT_MODULES: qt5compat
-            , extraCmakeConfig: "-DZLIB_ROOT=C:/zlib -G Ninja -DQT_DEFAULT_MAJOR_VERSION=6"
-          }
-        - {
-            name: "Windows-Qt5-x86"
-            , os: windows-2019, WIN_ARCH: "amd64_x86"
-            , QT_VERSION: 5.15.2, QT_INST_DIR: "C:/", QT_ARCH: win32_msvc2019
-            , extraCmakeConfig: "-DZLIB_ROOT=C:/zlib -G Ninja -DQT_DEFAULT_MAJOR_VERSION=5"
-          }
-
 
     steps:
     - uses: actions/checkout@v2
@@ -101,8 +77,6 @@ jobs:
     - name: Env Script (Windows)
       uses: ilammy/msvc-dev-cmd@v1
       if: runner.os == 'Windows'
-      with:
-        arch: ${{matrix.config.WIN_ARCH}}
 
     - name: Install Dependencies
       if: ((runner.os == 'Windows') && (steps.cache-choco.outputs.cache-hit != 'true')) || (runner.os != 'Windows')
@@ -122,9 +96,8 @@ jobs:
        aqtversion: ==2.0.0
        py7zrversion: ==0.16.2
        dir: ${{matrix.config.QT_INST_DIR}}
-       arch: ${{ matrix.config.QT_ARCH }}
-       version: ${{ matrix.config.QT_VERSION }}
-       modules: ${{ matrix.config.QT_MODULES }}
+       version: ${{ env.QT_VERSION }}
+       modules: qt5compat
        cached: ${{ steps.cache-qt.outputs.cache-hit }}
        tools: 'desktop,tools_ifw,qt.tools.ifw.42'
 
@@ -141,7 +114,7 @@ jobs:
     - name: Build ff7tk
       id: main_build
       run: |
-        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_DEMOS=ON -DCPACK_PACKAGE_VERSION=continuous ${{matrix.config.extraCmakeConfig}}
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_DEMOS=ON -DCPACK_PACKAGE_VERSION=continuous -DQT_DEFAULT_MAJOR_VERSION=6 ${{matrix.config.extraCmakeConfig}}
         cmake --build build --config ${{env.BUILD_TYPE}} --target package
 
     - name: Deployment (Linux)
@@ -157,6 +130,7 @@ jobs:
         rm -rf ff7tk/usr/share/applications ff7tk/usr/share/pixmaps
         export VERSION=continuous
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{matrix.config.packageName}}/usr/lib
+        export PATH=$PATH:${{matrix.config.QT_INST_DIR}}/Qt/${{ env.QT_VERSION }}/gcc_64/libexec
         ${{matrix.config.linuxDeployQtPath}}
         ./linuxdeploy-x86_64.AppImage --appdir=widgetGallery --plugin=qt --output appimage \
             -e ${{matrix.config.packageName}}/usr/bin/ff7tkWidgetGallery \
@@ -171,10 +145,10 @@ jobs:
         mv ff7tk/usr/COPYING.TXT ${{matrix.config.packageName}}/
         mv ff7tk/ ${{matrix.config.packageName}}
         rm -rf ${{matrix.config.packageName}}/usr
-        tar -zcvf build/${{ matrix.config.releasePackage}} ${{matrix.config.packageName}}
+        tar -zcvf build/${{ matrix.config.packageName}}.tar.xz ${{matrix.config.packageName}}
 
     - name: Deploy Pages
-      if: runner.os == 'Linux' && github.ref == 'refs/heads/master' && matrix.config.QT_VERSION == '5.15.2'
+      if: runner.os == 'Linux' && github.ref == 'refs/heads/master'
       uses: JamesIves/github-pages-deploy-action@4.1.4
       with:
        branch: gh-pages
@@ -195,24 +169,11 @@ jobs:
       matrix:
         config:
         - {
-           name: "Linux-Qt6-aarch64"
-           , qt: 6, qtString: "Qt6", cmakeExtraConfig: "-DQT_DEFAULT_MAJOR_VERSION=6"
+           name: "Linux-aarch64"
            , arch: aarch64, distro: archarm_latest
           }
-        - {
-           name: "Linux-Qt5-aarch64"
-           , qt: 5, qtString: "Qt5", cmakeExtraConfig: "-DQT_DEFAULT_MAJOR_VERSION=5"
-           , arch: aarch64, distro: bullseye
-          }
-        - {
-           name: "Linux-Qt5-armv7"
-           , qt: 5, qtString: "Qt5", cmakeExtraConfig: "-DQT_DEFAULT_MAJOR_VERSION=5"
-           , arch: armv7, distro: bullseye
-          }
-
     steps:
       - uses: actions/checkout@v2.1.0
-        
       - uses: uraimo/run-on-arch-action@v2.1.1
         name: Build artifact
         id: build
@@ -224,23 +185,12 @@ jobs:
           dockerRunArgs: --volume "${PWD}/artifacts:/artifacts"
           shell: /bin/sh
           install: |
-            case "${{ matrix.config.distro }}" in
-              bullseye)
-                apt-get update -y
-                apt-get upgrade -y
-                apt-get install -y build-essential git zlib1g-dev wget doxygen graphviz qtbase5-dev libqt5svg5-dev qttools5-dev-tools qtbase5-dev-tools qt5-qmake qtdeclarative5-dev devscripts libssl-dev qttools5-dev qtquickcontrols2-5-dev
-                wget https://github.com/sithlord48/fresh-debian-cmake/releases/download/3.22.1/cmake-3.22.1-bullseye_${{matrix.config.arch}}.tar.gz
-                tar -xf cmake-3.22.1-bullseye_${{matrix.config.arch}}.tar.gz --strip-components=3 --one-top-level=/usr
-                ;;
-              arch*)
                 pacman -Syu --noconfirm
                 pacman -S base-devel cmake git zlib wget doxygen qt6-tools qt6-base qt6-5compat qt6-declarative qt6-svg clang graphviz --noconfirm
-              ;;
-            esac
 
           run: |
-            cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEMOS=ON -DCPACK_PACKAGE_VERSION=continuous ${{matrix.config.cmakeExtraConfig}}
-            cmake --build build --config Release --target package
+            cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_DEMOS=ON -DCPACK_PACKAGE_VERSION=continuous -DQT_DEFAULT_MAJOR_VERSION=6 ${{matrix.config.cmakeExtraConfig}}
+            cmake --build build --config RelWithDebInfo --target package
             mv build/ff7tk* /artifacts/
             rm /artifacts/ff7tk.pc
 
